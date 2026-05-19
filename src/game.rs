@@ -78,14 +78,6 @@ pub enum Outcome {
     BearWin,
 }
 
-#[derive(Debug, Clone)]
-pub struct SolveResult {
-    pub outcome: Outcome,
-    pub distance: u32,
-    pub best_move: Option<Move>,
-    pub principal_variation: Vec<Move>,
-}
-
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

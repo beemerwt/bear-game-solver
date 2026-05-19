@@ -4,31 +4,111 @@ pub const BEAR_GAME_BOARD: BoardDefinition = BoardDefinition {
     name: "Bear Game",
     turn_limit: 40,
     nodes: &[
-        BoardNode { id: "top_left", x: -1, y: -3, },
-        BoardNode { id: "top", x: 0, y: -3, },
-        BoardNode { id: "top_right", x: 1, y: -3, },
-        BoardNode { id: "upper_mid", x: 0, y: -2, },
-
-        BoardNode { id: "left_outer_top", x: -4, y: 0, },
-        BoardNode { id: "left_outer_mid", x: -4, y: 1, },
-        BoardNode { id: "left_outer_bottom", x: -4, y: 2, },
-        BoardNode { id: "left_inner", x: -3, y: 1, },
-
-        BoardNode { id: "right_outer_top", x: 4, y: 0, },
-        BoardNode { id: "right_outer_mid", x: 4, y: 1, },
-        BoardNode { id: "right_outer_bottom", x: 4, y: 2, },
-        BoardNode { id: "right_inner", x: 3, y: 1, },
-
-        BoardNode { id: "bottom_left", x: -1, y: 4, },
-        BoardNode { id: "bottom", x: 0, y: 4, },
-        BoardNode { id: "bottom_right", x: 1, y: 4, },
-        BoardNode { id: "lower_mid", x: 0, y: 3, },
-
-        BoardNode { id: "center_top", x: 0, y: -1, },
-        BoardNode { id: "center_left", x: -1, y: 1, },
-        BoardNode { id: "center", x: 0, y: 1, },
-        BoardNode { id: "center_right", x: 1, y: 1, },
-        BoardNode { id: "center_bottom", x: 0, y: 2, },
+        BoardNode {
+            id: "top_left",
+            x: -1,
+            y: -3,
+        },
+        BoardNode {
+            id: "top",
+            x: 0,
+            y: -3,
+        },
+        BoardNode {
+            id: "top_right",
+            x: 1,
+            y: -3,
+        },
+        BoardNode {
+            id: "upper_mid",
+            x: 0,
+            y: -2,
+        },
+        BoardNode {
+            id: "left_outer_top",
+            x: -4,
+            y: 0,
+        },
+        BoardNode {
+            id: "left_outer_mid",
+            x: -4,
+            y: 1,
+        },
+        BoardNode {
+            id: "left_outer_bottom",
+            x: -4,
+            y: 2,
+        },
+        BoardNode {
+            id: "left_inner",
+            x: -3,
+            y: 1,
+        },
+        BoardNode {
+            id: "right_outer_top",
+            x: 4,
+            y: 0,
+        },
+        BoardNode {
+            id: "right_outer_mid",
+            x: 4,
+            y: 1,
+        },
+        BoardNode {
+            id: "right_outer_bottom",
+            x: 4,
+            y: 2,
+        },
+        BoardNode {
+            id: "right_inner",
+            x: 3,
+            y: 1,
+        },
+        BoardNode {
+            id: "bottom_left",
+            x: -1,
+            y: 4,
+        },
+        BoardNode {
+            id: "bottom",
+            x: 0,
+            y: 4,
+        },
+        BoardNode {
+            id: "bottom_right",
+            x: 1,
+            y: 4,
+        },
+        BoardNode {
+            id: "lower_mid",
+            x: 0,
+            y: 3,
+        },
+        BoardNode {
+            id: "center_top",
+            x: 0,
+            y: -1,
+        },
+        BoardNode {
+            id: "center_left",
+            x: -1,
+            y: 1,
+        },
+        BoardNode {
+            id: "center",
+            x: 0,
+            y: 1,
+        },
+        BoardNode {
+            id: "center_right",
+            x: 1,
+            y: 1,
+        },
+        BoardNode {
+            id: "center_bottom",
+            x: 0,
+            y: 2,
+        },
     ],
     edges: &[
         BoardEdge("top_left", "top"),
@@ -61,10 +141,10 @@ pub const BEAR_GAME_BOARD: BoardDefinition = BoardDefinition {
         BoardEdge("right_outer_mid", "right_outer_bottom"),
         BoardEdge("right_outer_top", "right_inner"),
         BoardEdge("right_outer_bottom", "right_inner"),
-				BoardEdge("bottom_left", "left_outer_bottom"),
-				BoardEdge("bottom_right", "right_outer_bottom"),
-				BoardEdge("top_left", "left_outer_top"),
-				BoardEdge("top_right", "right_outer_top"),
+        BoardEdge("bottom_left", "left_outer_bottom"),
+        BoardEdge("bottom_right", "right_outer_bottom"),
+        BoardEdge("top_left", "left_outer_top"),
+        BoardEdge("top_right", "right_outer_top"),
     ],
     start: StartState {
         bear: "top",

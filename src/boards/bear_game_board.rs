@@ -118,6 +118,8 @@ pub const BEAR_GAME_BOARD: BoardDefinition = BoardDefinition {
         BoardEdge("top_right", "upper_mid"),
         BoardEdge("upper_mid", "center_top"),
         BoardEdge("center_top", "center"),
+        BoardEdge("center_top", "center_left"),
+        BoardEdge("center_top", "center_right"),
         BoardEdge("left_outer_top", "left_outer_mid"),
         BoardEdge("left_outer_mid", "left_outer_bottom"),
         BoardEdge("left_outer_mid", "left_inner"),

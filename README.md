@@ -1,6 +1,6 @@
 # Bear Game Solver
 
-A Rust project that models the **Bear Game** as an undirected graph and solves it via exhaustive minimax with memoization (perfect play for both sides).
+A Rust project that models the **Bear Game** as an undirected graph and solves it as a finite perfect-information game.
 
 ## Coordinate convention
 
@@ -12,33 +12,20 @@ Legal movement is determined exclusively by explicit edges.
 - `cargo run -- validate`
 - `cargo run -- moves`
 - `cargo run -- solve`
+- `cargo run -- policy -- --limit 25`
 - `cargo run -- render-svg` (optional SVG to `target/bear_game_board.svg`)
-
-## Editing the board
-
-Edit `src/boards/bear_game_board.rs`:
-
-1. Add or modify `BoardNode { id, x, y }` entries.
-2. Add `BoardEdge("a", "b")` entries once each (undirected).
-3. Set `start.bear`, `start.hunters`, and `start.side_to_move`.
-
-The validator checks for duplicate node IDs, invalid edges, duplicate/self edges, and invalid starting positions.
-Duplicate coordinates are warnings (non-fatal).
 
 ## Win/loss interpretation
 
 - Hunters win when the bear has no legal move.
-- Bear wins when `hunter_turns_used >= turn_limit`.
+- Bear wins when `hunter_turns_used >= turn_limit` and bear is not trapped.
+- `hunter_turns_used` increments after a **hunter move** only.
 - Default interpretation: `turn_limit = 40` means 40 hunter moves maximum.
-- Hunters choose moves to force a win as fast as possible.
-- Bear chooses moves to avoid hunter win if possible; otherwise to delay loss as long as possible.
 
-## Main workflow
+## What counts as a guaranteed hunter win?
 
-1. Define nodes with IDs and coordinates.
-2. Define explicit undirected edges.
-3. Set start locations and side to move.
-4. Run `validate`.
-5. Run `solve` to see whether hunters can force a win.
+A hunter win is guaranteed only when the solver finds at least one hunter move at every hunter decision point such that, no matter which legal move the bear chooses afterward, the resulting state is still classified as `HuntersWin`.
 
-The board is manually encoded; if the node map is inaccurate, update the board definition.
+If the bear has even one legal response that reaches a `BearWin` state, then the current bear-turn state is **not** a guaranteed hunter win.
+
+The proof is the full solved policy region plus universal bear-branch closure, not a single principal variation line.

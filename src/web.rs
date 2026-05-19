@@ -7,7 +7,10 @@ use axum::{
 use tower_http::services::ServeDir;
 
 use crate::{
-    api::{AppState, apply_move_endpoint, board, evaluate, legal_moves},
+    api::{
+        AppState, apply_best_hunter_move, apply_move_endpoint, board, evaluate, legal_moves,
+        manual_bear_move, recommend_hunter_move,
+    },
     graph::Graph,
     solver::Solver,
 };
@@ -23,6 +26,9 @@ pub async fn serve(graph: Graph) {
         .route("/api/legal-moves", post(legal_moves))
         .route("/api/evaluate", post(evaluate))
         .route("/api/apply-move", post(apply_move_endpoint))
+        .route("/api/recommend-hunter-move", post(recommend_hunter_move))
+        .route("/api/manual-bear-move", post(manual_bear_move))
+        .route("/api/apply-best-hunter-move", post(apply_best_hunter_move))
         .fallback_service(
             ServeDir::new("static/index.html")
                 .append_index_html_on_directories(true)

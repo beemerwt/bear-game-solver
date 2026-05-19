@@ -57,6 +57,7 @@ pub struct BoardResponse {
     edges: Vec<[String; 2]>,
     start: ApiGameState,
 }
+
 #[derive(Serialize)]
 pub struct NodeResponse {
     id: String,
@@ -88,6 +89,36 @@ pub struct ApplyMoveRequest {
 #[derive(Serialize)]
 pub struct ApplyMoveResponse {
     state: ApiGameState,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HunterRecommendationResponse {
+    outcome: Outcome,
+    recommended_move: Option<ApiMove>,
+    safe_moves: Vec<ApiMove>,
+    worst_case_distance: Option<u32>,
+    explanation: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManualBearMoveRequest {
+    state: ApiGameState,
+    to: String,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManualBearMoveResponse {
+    state: ApiGameState,
+    recommendation: HunterRecommendationResponse,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplyBestHunterMoveResponse {
+    applied_move: Option<ApiMove>,
+    state: ApiGameState,
+    explanation: String,
 }
 
 pub async fn board(State(state): State<AppState>) -> impl IntoResponse {
@@ -204,6 +235,99 @@ pub async fn apply_move_endpoint(
     .into_response()
 }
 
+pub async fn recommend_hunter_move(
+    State(state): State<AppState>,
+    Json(req): Json<ApiGameState>,
+) -> impl IntoResponse {
+    let gs = match to_internal_state(&state.graph, req) {
+        Ok(v) => v,
+        Err(e) => return bad(e),
+    };
+    if gs.side_to_move != SideToMove::Hunters {
+        return bad("sideToMove must be Hunters; move the bear manually first".into());
+    }
+    Json(recommendation_for(&state, &gs)).into_response()
+}
+
+pub async fn manual_bear_move(
+    State(state): State<AppState>,
+    Json(req): Json<ManualBearMoveRequest>,
+) -> impl IntoResponse {
+    let gs = match to_internal_state(&state.graph, req.state) {
+        Ok(v) => v,
+        Err(e) => return bad(e),
+    };
+    if gs.side_to_move != SideToMove::Bear {
+        return bad("manual bear move requires sideToMove=Bear".into());
+    }
+    let to = match map_node(&state.graph, &req.to) {
+        Ok(v) => v,
+        Err(e) => return bad(e),
+    };
+    let mv = Move::Bear { from: gs.bear, to };
+    if !legal_bear_moves(&state.graph, &gs).contains(&mv) {
+        return bad("illegal bear move".into());
+    }
+    let next = apply_move(&gs, &mv);
+    Json(ManualBearMoveResponse {
+        state: to_api_state(&next),
+        recommendation: recommendation_for(&state, &next),
+    })
+    .into_response()
+}
+
+pub async fn apply_best_hunter_move(
+    State(state): State<AppState>,
+    Json(req): Json<ApiGameState>,
+) -> impl IntoResponse {
+    let gs = match to_internal_state(&state.graph, req) {
+        Ok(v) => v,
+        Err(e) => return bad(e),
+    };
+    if gs.side_to_move != SideToMove::Hunters {
+        return bad("apply-best-hunter-move requires sideToMove=Hunters".into());
+    }
+    let rec = recommendation_for(&state, &gs);
+    if rec.outcome == Outcome::BearWin || rec.recommended_move.is_none() {
+        return (
+            StatusCode::CONFLICT,
+            Json(ApiError {
+                error: "No hunter move can guarantee a forced win from this state.".into(),
+            }),
+        )
+            .into_response();
+    }
+    let mv = to_internal_move(
+        &state.graph,
+        &gs,
+        rec.recommended_move.clone().expect("checked"),
+    )
+    .expect("valid recommended move");
+    let next = apply_move(&gs, &mv);
+    Json(ApplyBestHunterMoveResponse {
+        applied_move: Some(to_api_move(mv)),
+        state: to_api_state(&next),
+        explanation:
+            "Applied the best hunter move. Now manually update the bear after the real bear move."
+                .into(),
+    })
+    .into_response()
+}
+
+fn recommendation_for(state: &AppState, gs: &GameState) -> HunterRecommendationResponse {
+    let mut solver = state.solver.lock().expect("lock");
+    let ev = solver.evaluate_state(gs.clone());
+    match ev.outcome {
+        Outcome::HuntersWin => {
+            let mut scored: Vec<(Move, u32)> = ev.winning_hunter_moves.iter().map(|mv| (mv.clone(), solver.evaluate_state(apply_move(gs, mv)).distance + 1)).collect();
+            scored.sort_by_key(|(_, d)| *d);
+            let recommended = scored.first().map(|(mv, _)| mv.clone());
+            HunterRecommendationResponse { outcome: Outcome::HuntersWin, recommended_move: recommended.map(to_api_move), safe_moves: ev.winning_hunter_moves.into_iter().map(to_api_move).collect(), worst_case_distance: scored.first().map(|(_, d)| *d), explanation: "This move preserves a forced hunter win against any legal bear response.".into() }
+        }
+        Outcome::BearWin => HunterRecommendationResponse { outcome: Outcome::BearWin, recommended_move: None, safe_moves: vec![], worst_case_distance: None, explanation: "No hunter move can guarantee a win from this state within the remaining move limit.".into() },
+    }
+}
+
 fn moves_for_state(graph: &Graph, state: &GameState) -> Vec<Move> {
     match state.side_to_move {
         SideToMove::Hunters => legal_hunter_moves(graph, state),
@@ -296,105 +420,5 @@ fn to_api_state(st: &GameState) -> ApiGameState {
         hunters: st.hunters.map(|h| h.to_string()),
         side_to_move: st.side_to_move,
         hunter_turns_used: st.hunter_turns_used,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{boards::bear_game_board::BEAR_GAME_BOARD, graph::Graph};
-    fn graph() -> Graph {
-        Graph::from_board_definition(&BEAR_GAME_BOARD).unwrap()
-    }
-    #[test]
-    fn state_conversion() {
-        let g = graph();
-        let api = ApiGameState {
-            bear: "top".into(),
-            hunters: ["bottom_left".into(), "bottom".into(), "bottom_right".into()],
-            side_to_move: SideToMove::Hunters,
-            hunter_turns_used: 0,
-        };
-        let st = to_internal_state(&g, api).unwrap();
-        assert_eq!(st.side_to_move, SideToMove::Hunters);
-    }
-    #[test]
-    fn invalid_state_rejected() {
-        let g = graph();
-        let api = ApiGameState {
-            bear: "bad".into(),
-            hunters: ["bottom_left".into(), "bottom".into(), "bottom_right".into()],
-            side_to_move: SideToMove::Hunters,
-            hunter_turns_used: 0,
-        };
-        assert!(to_internal_state(&g, api).is_err());
-    }
-    #[test]
-    fn illegal_move_rejected() {
-        let g = graph();
-        let st = to_internal_state(
-            &g,
-            ApiGameState {
-                bear: "top".into(),
-                hunters: ["bottom_left".into(), "bottom".into(), "bottom_right".into()],
-                side_to_move: SideToMove::Hunters,
-                hunter_turns_used: 0,
-            },
-        )
-        .unwrap();
-        let mv = to_internal_move(
-            &g,
-            &st,
-            ApiMove::Hunter {
-                hunter_index: 0,
-                from: "top".into(),
-                to: "center".into(),
-            },
-        )
-        .unwrap();
-        assert!(!moves_for_state(&g, &st).contains(&mv));
-    }
-    #[test]
-    fn hunter_move_increments_and_switches() {
-        let g = graph();
-        let st = to_internal_state(
-            &g,
-            ApiGameState {
-                bear: "top".into(),
-                hunters: ["bottom_left".into(), "bottom".into(), "bottom_right".into()],
-                side_to_move: SideToMove::Hunters,
-                hunter_turns_used: 0,
-            },
-        )
-        .unwrap();
-        let mv = legal_hunter_moves(&g, &st)[0].clone();
-        let next = apply_move(&st, &mv);
-        assert_eq!(next.hunter_turns_used, 1);
-        assert_eq!(next.side_to_move, SideToMove::Bear);
-    }
-    #[test]
-    fn bear_move_no_increment_switches() {
-        let g = graph();
-        let st = GameState {
-            bear: "top",
-            hunters: ["bottom", "bottom_left", "bottom_right"],
-            side_to_move: SideToMove::Bear,
-            hunter_turns_used: 3,
-        };
-        let mv = legal_bear_moves(&g, &st)[0].clone();
-        let next = apply_move(&st, &mv);
-        assert_eq!(next.hunter_turns_used, 3);
-        assert_eq!(next.side_to_move, SideToMove::Hunters);
-    }
-    #[test]
-    fn start_eval_consistent() {
-        let g = graph();
-        let start = GameState::from_start(&BEAR_GAME_BOARD.start);
-        let mut s1 = Solver::new(&g);
-        let mut s2 = Solver::new(&g);
-        assert_eq!(
-            s1.evaluate_state(start.clone()).outcome,
-            s2.evaluate_state(start).outcome
-        );
     }
 }

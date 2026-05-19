@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub type NodeId = &'static str;
@@ -28,7 +29,8 @@ pub struct StartState {
     pub side_to_move: SideToMove,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub enum SideToMove {
     Hunters,
     Bear,
@@ -72,7 +74,8 @@ pub enum Move {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub enum Outcome {
     HuntersWin,
     BearWin,

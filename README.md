@@ -29,3 +29,21 @@ A hunter win is guaranteed only when the solver finds at least one hunter move a
 If the bear has even one legal response that reaches a `BearWin` state, then the current bear-turn state is **not** a guaranteed hunter win.
 
 The proof is the full solved policy region plus universal bear-branch closure, not a single principal variation line.
+
+## Web Server
+
+Run:
+
+- `cargo run -- serve`
+
+Then open:
+
+- http://127.0.0.1:3000
+
+Notes:
+- The browser UI is a debugging/play interface.
+- The Rust solver remains the source of truth.
+- Coordinates are used only for rendering.
+- Edges define legal movement.
+- The solver classifies each position as `HuntersWin` or `BearWin` under perfect play.
+- “Best move” is the minimax-selected move, not a heuristic guess.

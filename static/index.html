@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Bear Game Hunter Assistant</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<h1>Bear Game Hunter Assistant</h1>
+<div>
+  <button id="reset">Reset to Official Start</button>
+  <button id="applyBest">Apply Best Hunter Move</button>
+  <button id="undo">Undo Last Move</button>
+  <button id="recalc">Recalculate Recommendation</button>
+  <label>Mode <select id="mode"><option value="assistant">Assistant</option><option value="analysis">Analysis</option></select></label>
+</div>
+<div id="status"></div>
+<svg id="board" viewBox="0 0 800 700"></svg>
+<pre id="details"></pre>
+<script src="/app.js"></script>
+</body></html>

@@ -27,15 +27,18 @@ enum Command {
         extra: Vec<String>,
     },
     RenderSvg,
+    Serve,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     match Cli::parse().command {
         Command::Validate => validate(),
         Command::Moves => moves(),
         Command::Solve => solve(),
         Command::Policy { limit, extra } => policy(limit.or(parse_limit(&extra))),
         Command::RenderSvg => render_svg_cmd(),
+        Command::Serve => bear_game_solver::web::serve(build()).await,
     }
 }
 fn build() -> Graph {

@@ -29,3 +29,35 @@ A hunter win is guaranteed only when the solver finds at least one hunter move a
 If the bear has even one legal response that reaches a `BearWin` state, then the current bear-turn state is **not** a guaranteed hunter win.
 
 The proof is the full solved policy region plus universal bear-branch closure, not a single principal variation line.
+
+## Web Server
+
+Run:
+
+- `cargo run -- serve`
+
+Then open:
+
+- http://127.0.0.1:3000
+
+Notes:
+- The browser UI is a debugging/play interface.
+- The Rust solver remains the source of truth.
+- Coordinates are used only for rendering.
+- Edges define legal movement.
+- The solver classifies each position as `HuntersWin` or `BearWin` under perfect play.
+- “Best move” is the minimax-selected move, not a heuristic guess.
+
+
+## Real Board Assistant Workflow
+
+1. Start the web server: `cargo run -- serve`.
+2. Open `http://127.0.0.1:3000`.
+3. Set the board to match the physical board.
+4. Press **Apply Best Hunter Move**.
+5. Move that hunter on the physical board.
+6. Let the opponent move the bear in real life.
+7. Manually move the bear in the app to match the physical board.
+8. Repeat.
+
+If the app reports `BearWin`, then from the entered state there is no guaranteed hunter win within the remaining 40 hunter turns. This may indicate: incorrect board entry, not following recommended hunter moves, incorrect turn count, or rule/board differences from the encoded graph.
